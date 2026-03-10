@@ -1,0 +1,74 @@
+{
+    order replace after encode
+
+    servers {
+        trusted_proxies static private_ranges
+    }
+
+    log {
+        output stdout
+        format json
+        level {$CADDY_LOG_LEVEL:INFO}
+    }
+}
+
+:80 {
+    encode zstd gzip
+
+    # Health endpoints for container/orchestrator checks
+    handle /healthz {
+        respond "ok" 200
+    }
+
+    handle /readyz {
+        respond "ready" 200
+    }
+
+    # Shared upstream for all backend-routed paths
+    @backend_paths path /_allauth/* /account/* /api/* /media/* /storage/*
+    handle @backend_paths {
+        vars original_host {hostport}
+        vars original_proto {scheme}
+
+        @xfh header X-Forwarded-Host *
+        vars @xfh original_host {http.request.header.X-Forwarded-Host}
+
+        @xfp header X-Forwarded-Proto *
+        vars @xfp original_proto {http.request.header.X-Forwarded-Proto}
+
+        reverse_proxy {$TRAPPER_BACKEND_URL} {
+            header_up Host {upstream_hostport}
+            header_up X-Trapper-Forwarded-Host {vars.original_host}
+            header_up X-Trapper-Forwarded-Proto {vars.original_proto}
+
+            transport http {
+                dial_timeout 5s
+                response_header_timeout 30s
+                read_timeout 30s
+                write_timeout 30s
+            }
+        }
+    }
+
+    # Static assets: long cache if fingerprinted
+    @static_assets path_regexp st \.(?:js|mjs|css|png|jpg|jpeg|gif|svg|webp|ico|woff2?)$
+    header @static_assets Cache-Control "public, max-age=3600"
+
+    # SPA fallback
+    handle_path {$TRAPPER_CS_BASE_HREF:/}* {
+        root * /srv
+        try_files {path} /index.html
+        replace "<base href=\"/\">" "<base href=\"{$TRAPPER_CS_BASE_HREF:/}\">"
+        file_server
+    }
+
+    # index.html should not be cached aggressively
+    @index path /index.html
+    header @index Cache-Control "no-cache, no-store, must-revalidate"
+
+    # Optional security headers at app layer (safe defaults behind Traefik)
+    header {
+        X-Content-Type-Options nosniff
+        Referrer-Policy strict-origin-when-cross-origin
+    }
+}

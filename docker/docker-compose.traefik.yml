@@ -1,0 +1,22 @@
+services:
+  app:
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.$COMPOSE_PROJECT_NAME.rule=Host(`$TRAPPERCS_DOMAIN`)'
+      - 'traefik.http.routers.$COMPOSE_PROJECT_NAME.entrypoints=websecure'
+      - 'traefik.http.routers.$COMPOSE_PROJECT_NAME.service=$COMPOSE_PROJECT_NAME'
+      - 'traefik.http.routers.$COMPOSE_PROJECT_NAME.tls=${TLS_ENABLED:-true}'
+#     - 'traefik.http.routers.$COMPOSE_PROJECT_NAME.tls.certresolver=le'
+      - 'traefik.http.services.$COMPOSE_PROJECT_NAME.loadbalancer.server.port=80'
+      - 'traefik.docker.network=${TRAEFIK_NETWORK:-wildintel-proxy}'
+      # Healthcheck Traefik -> Caddy
+      - traefik.http.services.trapper-frontend.loadbalancer.healthcheck.path=/readyz
+      - traefik.http.services.trapper-frontend.loadbalancer.healthcheck.interval=10s
+      - traefik.http.services.trapper-frontend.loadbalancer.healthcheck.timeout=3s
+    networks:
+      - traefik_proxy
+
+networks:
+  traefik_proxy:
+    name: ${TRAEFIK_NETWORK:-wildintel-proxy}
+    external: true

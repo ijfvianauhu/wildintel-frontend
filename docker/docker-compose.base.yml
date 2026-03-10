@@ -1,0 +1,21 @@
+x-logging: &default-logging
+  driver: 'json-file'
+  options:
+    max-size: '20m'
+
+services:
+  app:
+    image:  "${IMAGE_NAME}:${IMAGE_TAG_WEB}"
+    restart: unless-stopped
+    logging: *default-logging
+    environment:
+      - TRAPPER_BACKEND_URL=$TRAPPER_BACKEND_URL
+      - CADDY_LOG_LEVEL=${CADDY_LOG_LEVEL:-INFO}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/readyz >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 15s
+    networks:
+      - default

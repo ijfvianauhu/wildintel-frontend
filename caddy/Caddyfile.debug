@@ -1,0 +1,107 @@
+{
+    order replace after encode
+
+    servers {
+        trusted_proxies static private_ranges
+    }
+
+    log {
+        output stdout
+        format console
+        level {$CADDY_LOG_LEVEL:INFO}
+    }
+}
+
+:80
+encode zstd gzip
+
+handle /healthz {
+    respond "ok" 200
+}
+
+handle /readyz {
+    respond "ready" 200
+}
+
+handle /_allauth/* {
+    vars original_host {hostport}
+    vars original_proto {scheme}
+    @xfh header X-Forwarded-Host *
+    vars @xfh original_host {http.request.header.X-Forwarded-Host}
+    @xfp header X-Forwarded-Proto *
+    vars @xfp original_proto {http.request.header.X-Forwarded-Proto}
+
+    reverse_proxy {$TRAPPER_BACKEND_URL} {
+        header_up Host {upstream_hostport}
+        header_up X-Trapper-Forwarded-Host {vars.original_host}
+        header_up X-Trapper-Forwarded-Proto {vars.original_proto}
+    }
+}
+
+handle /account/* {
+    vars original_host {hostport}
+    vars original_proto {scheme}
+    @xfh header X-Forwarded-Host *
+    vars @xfh original_host {http.request.header.X-Forwarded-Host}
+    @xfp header X-Forwarded-Proto *
+    vars @xfp original_proto {http.request.header.X-Forwarded-Proto}
+
+    reverse_proxy {$TRAPPER_BACKEND_URL} {
+        header_up Host {upstream_hostport}
+        header_up X-Trapper-Forwarded-Host {vars.original_host}
+        header_up X-Trapper-Forwarded-Proto {vars.original_proto}
+    }
+}
+
+handle /api/* {
+    vars original_host {hostport}
+    vars original_proto {scheme}
+    @xfh header X-Forwarded-Host *
+    vars @xfh original_host {http.request.header.X-Forwarded-Host}
+    @xfp header X-Forwarded-Proto *
+    vars @xfp original_proto {http.request.header.X-Forwarded-Proto}
+
+    reverse_proxy {$TRAPPER_BACKEND_URL} {
+        header_up Host {upstream_hostport}
+        header_up X-Trapper-Forwarded-Host {vars.original_host}
+        header_up X-Trapper-Forwarded-Proto {vars.original_proto}
+    }
+}
+
+handle /media/* {
+    vars original_host {hostport}
+    vars original_proto {scheme}
+    @xfh header X-Forwarded-Host *
+    vars @xfh original_host {http.request.header.X-Forwarded-Host}
+    @xfp header X-Forwarded-Proto *
+    vars @xfp original_proto {http.request.header.X-Forwarded-Proto}
+
+    reverse_proxy {$TRAPPER_BACKEND_URL} {
+        header_up Host {upstream_hostport}
+        header_up X-Trapper-Forwarded-Host {vars.original_host}
+        header_up X-Trapper-Forwarded-Proto {vars.original_proto}
+    }
+}
+
+handle /storage/* {
+    vars original_host {hostport}
+    vars original_proto {scheme}
+    @xfh header X-Forwarded-Host *
+    vars @xfh original_host {http.request.header.X-Forwarded-Host}
+    @xfp header X-Forwarded-Proto *
+    vars @xfp original_proto {http.request.header.X-Forwarded-Proto}
+
+    reverse_proxy {$TRAPPER_BACKEND_URL} {
+        header_up Host {upstream_hostport}
+        header_up X-Trapper-Forwarded-Host {vars.original_host}
+        header_up X-Trapper-Forwarded-Proto {vars.original_proto}
+    }
+}
+
+handle_path {$TRAPPER_CS_BASE_HREF:/}* {
+    root * /srv
+    try_files {path} /index.html
+    header Cache-Control "no-cache"
+    replace "<base href=\"/\">" "<base href=\"{$TRAPPER_CS_BASE_HREF:/}\">"
+    file_server
+}
