@@ -10,9 +10,9 @@ services:
       - 'traefik.http.services.$COMPOSE_PROJECT_NAME.loadbalancer.server.port=80'
       - 'traefik.docker.network=${TRAEFIK_NETWORK:-wildintel-proxy}'
       # Healthcheck Traefik -> Caddy
-      - traefik.http.services.trapper-frontend.loadbalancer.healthcheck.path=/readyz
-      - traefik.http.services.trapper-frontend.loadbalancer.healthcheck.interval=10s
-      - traefik.http.services.trapper-frontend.loadbalancer.healthcheck.timeout=3s
+      - traefik.http.services.$COMPOSE_PROJECT_NAME.loadbalancer.healthcheck.path=/readyz
+      - traefik.http.services.$COMPOSE_PROJECT_NAME.loadbalancer.healthcheck.interval=10s
+      - traefik.http.services.$COMPOSE_PROJECT_NAME.loadbalancer.healthcheck.timeout=3s
     networks:
       - traefik_proxy
 
